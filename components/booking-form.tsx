@@ -79,6 +79,17 @@ export function BookingForm({ warehouse, userId }: BookingFormProps) {
 
       if (bookingError) throw bookingError
 
+      // Mark the warehouse as unavailable immediately after creating a booking
+      const { error: warehouseUpdateError } = await supabase
+        .from("warehouses")
+        .update({ is_available: false })
+        .eq("id", warehouse.id)
+
+      if (warehouseUpdateError) {
+        // If this fails, we still proceed to payment but log the issue for visibility
+        console.error("Failed to mark warehouse unavailable:", warehouseUpdateError)
+      }
+
       router.push(`/payment/${booking.id}`)
     } catch (error: any) {
       const msg = String(error?.message || "")
