@@ -24,6 +24,23 @@ export function BookingActions({ bookingId }: BookingActionsProps) {
 
       if (error) throw error
 
+      // If booking is cancelled, mark the related warehouse as available again
+      if (status === "cancelled") {
+        const { data: booking, error: fetchErr } = await supabase
+          .from("bookings")
+          .select("warehouse_id")
+          .eq("id", bookingId)
+          .single()
+        if (fetchErr) throw fetchErr
+        if (booking?.warehouse_id) {
+          const { error: whErr } = await supabase
+            .from("warehouses")
+            .update({ is_available: true })
+            .eq("id", booking.warehouse_id)
+          if (whErr) throw whErr
+        }
+      }
+
       toast.success(`Booking ${status === "confirmed" ? "approved" : "cancelled"} successfully!`)
       router.refresh()
     } catch (error) {
